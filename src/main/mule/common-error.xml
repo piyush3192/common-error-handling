@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+	http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd
+	http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+    <configuration doc:name="Configuration" doc:id="748f6990-43f3-488d-9b8b-1b087b546775" defaultErrorHandler-ref="error-handling-global" />
+    
+    <configuration-properties doc:name="Error Configuration properties" doc:id="803d029f-8ee4-4178-9d49-a159fceffe46" file="properties/errors.yaml" />
+	
+    <flow name="custom-error-types-declaration" doc:id="b2f04fa7-58de-4b23-a5de-d0c2d73b6fa5" >
+	<raise-error doc:name="Raise error MYAPP:CUSTOM" doc:id="3d03665e-3141-4474-a274-c6479a8ae479" type="MYAPP:CUSTOM"/>
+	</flow>  
+	  
+	<error-handler name="error-handling-global" doc:id="73ea6436-0b2b-4850-b871-a5a35646f465">
+		<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="708d40d2-3c1b-484c-8d20-4a10a5eaef74">
+			<logger level="INFO" doc:name="Logger" doc:id="5b35aa4f-acfd-4525-87db-66b4ee261511" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null),&#10;(failingNode: error.failingComponent) if (error != null),&#10;(originalError: error.detailedDescription) if (error != null)&#10;}]"/>
+		</on-error-propagate>
+	</error-handler>
+
+	<error-handler name="error-handling-apikit" doc:id="2d1745a1-0d9d-4dd4-9a7b-83d1057c6571">
+		<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="1dee255c-84fd-4cdd-8cf5-0959e2b9f61d"
+			type="APIKIT:BAD_REQUEST, APIKIT:METHOD_NOT_ALLOWED, APIKIT:NOT_ACCEPTABLE, APIKIT:NOT_FOUND, APIKIT:UNSUPPORTED_MEDIA_TYPE">
+			<ee:transform doc:name="Create Error Response" doc:id="c1be3c42-6430-431c-bf50-e30723518a21"
+				xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+				<ee:message>
+					<ee:set-payload resource="dwl/generic-error-response.dwl" />
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable resource="dwl/generic-error-httpstatus.dwl" variableName="httpStatus" />
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="a2a1ffd1-1131-4fa1-8419-de3c3b9d7eb6" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null)&#10;}]" />
+		</on-error-propagate>
+	</error-handler>
+
+	<error-handler name="error-handling-flow" doc:id="49bbdab9-6904-416d-811a-3672cc78eaa7">
+		<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="5798c158-d3f1-4ccc-bd42-723fcbe71ca8"
+			type="HTTP:BAD_GATEWAY,HTTP:BAD_REQUEST,HTTP:FORBIDDEN,HTTP:INTERNAL_SERVER_ERROR,HTTP:METHOD_NOT_ALLOWED,HTTP:NOT_ACCEPTABLE,HTTP:NOT_FOUND,HTTP:UNAUTHORIZED,HTTP:UNSUPPORTED_MEDIA_TYPE">
+			<ee:transform doc:name="Create Error Response" doc:id="60bcc1af-cdbf-42f6-9c3e-543fc701581e">
+				<ee:message>
+					<ee:set-payload resource="dwl/error-response-http.dwl" />
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[p('error.' ++ error.errorType.namespace ++ '.' ++ error.errorType.identifier ++ '.status') default 500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="ac18d4a8-c5db-4ced-89c7-e6b59b9bb3a9" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null)&#10;}]" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="ad189693-2b31-4c00-8110-c53226da9fc9" when='#[error.errorType.namespace == "SWISS_SENSE"]'>
+			<ee:transform doc:name="Create Error Response" doc:id="d2266661-f746-45b5-a96b-8e4413b33f41">
+				<ee:message>
+					<ee:set-payload resource="dwl/generic-error-response.dwl" />
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[p('error.' ++ error.errorType.namespace ++ '.' ++ error.errorType.identifier ++ '.status') default 500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="36bca84c-1fd3-4c67-889c-98c0587b484c" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null)&#10;}]" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="f135ee70-4215-432a-a84b-73b7dc0e45ce" type="MYAPP:CUSTOM">
+			<ee:transform doc:name="Create Error Response" doc:id="9d57e445-a571-49e0-8e64-fd58b84b544c">
+				<ee:message>
+					<ee:set-payload resource="dwl/navision-error-response.dwl" />
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="43164250-aae4-4c45-82e8-63f2e98ffd55" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null)&#10;}]" />
+		</on-error-propagate>
+<on-error-propagate enableNotifications="false" logException="false" doc:name="On Error Propagate"
+			doc:id="5ef60909-9670-401c-8d08-8e013b7e6c24" type="ANY">
+			<ee:transform doc:name="Create Error Response" doc:id="e7dc2a09-15be-42c1-bf88-a6ea0953b795">
+				<ee:message>
+					<ee:set-payload resource="dwl/any-error-response.dwl" />
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[500]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="390125ec-fc43-4c87-b7e0-83f5440df778" message="#[output application/json ---&#10;{&#10;(payload: payload as String) if (payload != null)&#10;}]" />
+		</on-error-propagate>
+	</error-handler>
+	
+</mule>
