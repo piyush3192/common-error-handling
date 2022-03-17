@@ -4,7 +4,7 @@
 
 	<groupId>c6e79379-4bd5-4219-bd9f-394bade71f0e</groupId>
 	<artifactId>common-error-handling</artifactId>
-	<version>1.0.1</version>
+	<version>1.0.0</version>
 	<packaging>mule-application</packaging>
 	<name>common-error-handling</name>
 
@@ -29,6 +29,9 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
+				<configuration>
+					<classifier>mule-plugin</classifier>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
